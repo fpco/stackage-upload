@@ -4,11 +4,11 @@ A more secure version of cabal upload which uses HTTPS. When uploading a
 package to Hackage, `cabal-install` will perform the upload in plain-text,
 unencrypted HTTP, which is vulnerable to man in the middle (MITM) attacks. This
 package instead uses secure HTTPS upload to avoid both MITM attacks, and
-possibly eavesdropping attacks (though the latter are yet unproven). In the
+possibly eavesdropping attacks (though the latter are as yet unproven). In the
 future, additionally functionality may be added.
 
 To install, simply run `cabal update && cabal install stackage-upload`. Usage
-is quite similar `cabal upload`: just call `stackage-upload` and pass in a list
+is quite similar to  `cabal upload`: just call `stackage-upload` and pass in a list
 of tarballs to upload. (If you have
 [stackage-cli](https://github.com/fpco/stackage-cli) installed, you can call
 `stk upload` instead.) `stackage-upload --help` will provide full options.
@@ -29,7 +29,7 @@ be part of the Haskell Platform. I disagree with this decision, since
 distributing a binary does not require that the libraries be available as well.
 The last time TLS support in the Platform was raised, the best option for this
 support (Vincent's wonderful [tls
-package](https://www.stackage.org/package/tls) was vetoed because [it didn't
+package](https://www.stackage.org/package/tls)) was vetoed because [it didn't
 follow the Package Versioning Policy's strict upper bounds
 approach](https://mail.haskell.org/pipermail/libraries/2014-April/022554.html).
 (Ironically, the alternative package mentioned there, http-streams, *also*
@@ -52,7 +52,7 @@ and decided to rebrand as `stackage-upload` when the severity of the insecure
 upload situation became apparent to me, and it became obvious that there was no
 path forward for getting `cabal-install` fixed.
 
-I actually consider this situation to be so dangerous, I would like to ask the
+I actually consider this situation to be so dangerous that I would like to ask the
 Hackage Server team to consider turning off insecure uploads to Hackage. The
 current possibility for corrupted uploads to infect all users of a package is
 alarmingly high.
