@@ -1,11 +1,12 @@
 # stackage-upload
 
-A more secure version of cabal upload which uses HTTPS. When uploading a
-package to Hackage, `cabal-install` will perform the upload in plain-text,
-unencrypted HTTP, which is vulnerable to man in the middle (MITM) attacks. This
-package instead uses secure HTTPS upload to avoid both MITM attacks, and
-possibly eavesdropping attacks (though the latter are as yet unproven). In the
-future, additionally functionality may be added.
+`stackage-upload` provides a more secure version of the `cabal upload` command
+by using HTTPS. When uploading a package to Hackage, `cabal upload` will
+perform the upload in plain-text via unencrypted HTTP, using [basic
+authentication](https://github.com/haskell/cabal/blob/2b3a69490a2dbd6dfa3905b8a50ebad8aec7b276/cabal-install/Distribution/Client/Upload.hs#L56),
+which is vulnerable to both man in the middle (MITM) and eavesdropping attacks
+(anyone sniffing your packets can get your username and password). This package
+instead uses secure HTTPS to upload to avoid both of these attacks.
 
 To install, simply run `cabal update && cabal install stackage-upload`. Usage
 is quite similar to  `cabal upload`: just call `stackage-upload` and pass in a list
@@ -15,25 +16,12 @@ of tarballs to upload. (If you have
 
 ## Why not fix cabal?
 
-A legitimate question is why not add HTTPS support to cabal-install? The answer
-is that I tried. At least as of April 2015, there was no proposal I was able to
-make that allowed TLS support to be added to cabal-install, due to policies
-regarding dependencies in the Cabal project. I would be much happier to add
-this support there (and, at the same time, add secure *download* support, which
-is also severely lacking). I made an open offer in April 2015, and the offer
-stands: if the Cabal project gives me the green light to add http-client as a
-dependency to cabal-install, I'll send the pull request myself.
-
-To give some more background: Cabal currently requires that all dependencies
-be part of the Haskell Platform. I disagree with this decision, since
-distributing a binary does not require that the libraries be available as well.
-The last time TLS support in the Platform was raised, the best option for this
-support (Vincent's wonderful [tls
-package](https://www.stackage.org/package/tls)) was vetoed because [it didn't
-follow the Package Versioning Policy's strict upper bounds
-approach](https://mail.haskell.org/pipermail/libraries/2014-April/022554.html).
-(Ironically, the alternative package mentioned there, http-streams, *also*
-doesn't have upper bounds on all dependencies.)
+I'd be happy to add TLS support to cabal-install directly (using Vincent's
+`tls` package), but the two last times this topic came up, I have been unable
+to find a proposal that is acceptable to the Cabal project (mostly around
+Haskell Platform requirements). I made an open offer to send the pull request
+myself to move cabal-install over to http-client to get TLS support (either via
+http-client-tls or http-client-openssl).
 
 ## Why Stackage?
 
