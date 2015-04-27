@@ -43,6 +43,7 @@ See [the same question and its answer on stackage-update](https://github.com/fpc
 
 * Store passwords securely via GPG encryption
 * Upload documentation to Hackage (work around the sometimes-broken doc builder)
+* Perform pre-upload checks, such as running the test suite from the tarball to check for missing files
 
 ## History
 

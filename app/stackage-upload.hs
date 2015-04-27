@@ -8,7 +8,7 @@ main :: IO ()
 main = do
     (files, ()) <- simpleOptions
         $(simpleVersion version)
-        "stackage-upload"
+        "Secure upload of packages to Hackage"
         "Secure upload of packages to Hackage"
         options
         empty
