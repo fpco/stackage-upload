@@ -24,7 +24,7 @@ is also severely lacking). I made an open offer in April 2015, and the offer
 stands: if the Cabal project gives me the green light to add http-client as a
 dependency to cabal-install, I'll send the pull request myself.
 
-For give some more background: Cabal currently requires that all dependencies
+To give some more background: Cabal currently requires that all dependencies
 be part of the Haskell Platform. I disagree with this decision, since
 distributing a binary does not require that the libraries be available as well.
 The last time TLS support in the Platform was raised, the best option for this
