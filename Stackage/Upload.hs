@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+-- | Provide ability to upload tarballs to Hackage.
 module Stackage.Upload
     ( -- * Upload
       mkUploader
@@ -41,9 +42,11 @@ import qualified Data.Text                             as T
 import           Data.Text.Encoding                    (encodeUtf8)
 import qualified Data.Text.IO                          as TIO
 import           Data.Typeable                         (Typeable)
-import           Network.HTTP.Client                   (Manager, applyBasicAuth,
-                                                        brRead, checkStatus,
-                                                        newManager, parseUrl,
+import           Network.HTTP.Client                   (BodyReader, Manager,
+                                                        Response,
+                                                        applyBasicAuth, brRead,
+                                                        checkStatus, newManager,
+                                                        parseUrl,
                                                         requestHeaders,
                                                         responseBody,
                                                         responseStatus,
@@ -58,6 +61,9 @@ import           System.FilePath                       ((</>))
 import           System.IO                             (hFlush, hGetEcho,
                                                         hSetEcho, stdin, stdout)
 
+-- | Username and password to log into Hackage.
+--
+-- Since 0.1.0.0
 data HackageCreds = HackageCreds
     { hcUsername :: !Text
     , hcPassword :: !Text
@@ -74,20 +80,39 @@ instance FromJSON HackageCreds where
         <$> o .: "username"
         <*> o .: "password"
 
+-- | A source for getting Hackage credentials.
+--
+-- Since 0.1.0.0
 newtype HackageCredsSource = HackageCredsSource
     { getCreds :: IO (HackageCreds, FromFile)
     }
 
+-- | Whether the Hackage credentials were loaded from a file.
+--
+-- This information is useful since, typically, you only want to save the
+-- credentials to a file if it wasn't already loaded from there.
+--
+-- Since 0.1.0.0
 type FromFile = Bool
 
+-- | Load Hackage credentials from the given source.
+--
+-- Since 0.1.0.0
 loadCreds :: HackageCredsSource -> IO (HackageCreds, FromFile)
 loadCreds = getCreds
 
+-- | Save the given credentials to the credentials file.
+--
+-- Since 0.1.0.0
 saveCreds :: HackageCreds -> IO ()
 saveCreds creds = do
     fp <- credsFile
     L.writeFile fp $ encode creds
 
+-- | Load the Hackage credentials from the prompt, asking the user to type them
+-- in.
+--
+-- Since 0.1.0.0
 fromPrompt :: HackageCredsSource
 fromPrompt = HackageCredsSource $ do
     putStr "Hackage username: "
@@ -105,6 +130,9 @@ credsFile = do
     createDirectoryIfMissing True dir
     return $ dir </> "credentials.json"
 
+-- | Load the Hackage credentials from the JSON config file.
+--
+-- Since 0.1.0.0
 fromFile :: HackageCredsSource
 fromFile = HackageCredsSource $ do
     fp <- credsFile
@@ -113,6 +141,9 @@ fromFile = HackageCredsSource $ do
         Left e -> E.throwIO $ Couldn'tParseJSON fp e
         Right creds -> return (creds, True)
 
+-- | Load the Hackage credentials from the given arguments.
+--
+-- Since 0.1.0.0
 fromMemory :: Text -> Text -> HackageCredsSource
 fromMemory u p = HackageCredsSource $ return (HackageCreds
     { hcUsername = u
@@ -123,6 +154,10 @@ data HackageCredsExceptions = Couldn'tParseJSON FilePath String
     deriving (Show, Typeable)
 instance E.Exception HackageCredsExceptions
 
+-- | Try to load the credentials from the config file. If that fails, ask the
+-- user to enter them.
+--
+-- Since 0.1.0.0
 fromAnywhere = HackageCredsSource $
     getCreds fromFile `E.catches`
         [ E.Handler $ \(_ :: E.IOException) -> getCreds fromPrompt
@@ -141,6 +176,9 @@ promptPassword = do
   putStrLn ""
   return passwd
 
+-- | Turn the given settings into an @Uploader@.
+--
+-- Since 0.1.0.0
 mkUploader :: UploadSettings -> IO Uploader
 mkUploader us = do
     manager <- usGetManager us
@@ -180,6 +218,7 @@ mkUploader us = do
                         error $ "Upload failed on " ++ fp
         }
 
+printBody :: Response BodyReader -> IO ()
 printBody res =
     loop
   where
@@ -189,13 +228,24 @@ printBody res =
             S.hPut stdout bs
             loop
 
+-- | The computed value from a @UploadSettings@.
+--
+-- Typically, you want to use this with 'upload'.
+--
+-- Since 0.1.0.0
 data Uploader = Uploader
     { upload_ :: !(FilePath -> IO ())
     }
 
+-- | Upload a single tarball with the given @Uploader@.
+--
+-- Since 0.1.0.0
 upload :: Uploader -> FilePath -> IO ()
 upload = upload_
 
+-- | Settings for creating an @Uploader@.
+--
+-- Since 0.1.0.0
 data UploadSettings = UploadSettings
     { usUploadUrl   :: !String
     , usGetManager  :: !(IO Manager)
@@ -203,6 +253,12 @@ data UploadSettings = UploadSettings
     , usSaveCreds   :: !Bool
     }
 
+-- | Default value for @UploadSettings@.
+--
+-- Use setter functions to change defaults.
+--
+-- Since 0.1.0.0
+defaultUploadSettings :: UploadSettings
 defaultUploadSettings = UploadSettings
     { usUploadUrl = "https://hackage.haskell.org/packages/"
     , usGetManager = newManager tlsManagerSettings
@@ -210,9 +266,36 @@ defaultUploadSettings = UploadSettings
     , usSaveCreds = True
     }
 
+-- | Change the upload URL.
+--
+-- Default: "https://hackage.haskell.org/packages/"
+--
+-- Since 0.1.0.0
+setUploadUrl :: String -> UploadSettings -> UploadSettings
 setUploadUrl x us = us { usUploadUrl = x }
+
+-- | How to get an HTTP connection manager.
+--
+-- Default: @newManager tlsManagerSettings@
+--
+-- Since 0.1.0.0
+setGetManager :: IO Manager -> UploadSettings -> UploadSettings
 setGetManager x us = us { usGetManager = x }
+
+-- | How to get the Hackage credentials.
+--
+-- Default: @fromAnywhere@
+--
+-- Since 0.1.0.0
+setCredsSource :: HackageCredsSource -> UploadSettings -> UploadSettings
 setCredsSource x us = us { usCredsSource = x }
+
+-- | Save new credentials to the config file.
+--
+-- Default: @True@
+--
+-- Since 0.1.0.0
+setSaveCreds :: Bool -> UploadSettings -> UploadSettings
 setSaveCreds x us = us { usSaveCreds = x }
 
 handleIO :: (E.IOException -> IO a) -> IO a -> IO a
