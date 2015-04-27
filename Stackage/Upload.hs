@@ -212,6 +212,11 @@ mkUploader us = do
                         putStrLn "Usually means: you've already uploaded this package/version combination"
                         putStrLn "Ignoring error and continuing, full message from Hackage below:\n"
                         printBody res
+                    503 -> do
+                        putStrLn "service unavailable"
+                        putStrLn "This error some times gets sent even though the upload succeeded"
+                        putStrLn "Check on Hackage to see if your pacakge is present"
+                        printBody res
                     code -> do
                         putStrLn $ "unhandled status code: " ++ show code
                         printBody res
