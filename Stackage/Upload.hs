@@ -239,7 +239,7 @@ printBody res =
 --
 -- Since 0.1.0.0
 data Uploader = Uploader
-    { upload_ :: !(FilePath -> IO ())
+    { upload_ :: FilePath -> IO ()
     }
 
 -- | Upload a single tarball with the given @Uploader@.
