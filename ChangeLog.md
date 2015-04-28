@@ -1,3 +1,7 @@
+## 0.1.0.2
+
+* Improved README
+
 ## 0.1.0.1
 
 * Add handling of 503 error code
