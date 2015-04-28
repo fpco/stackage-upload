@@ -55,11 +55,21 @@ import           Network.HTTP.Client.MultipartFormData (formDataBody, partFile)
 import           Network.HTTP.Client.TLS               (tlsManagerSettings)
 import           Network.HTTP.Types                    (statusCode)
 import           System.Directory                      (createDirectoryIfMissing,
+                                                        doesDirectoryExist,
+                                                        doesFileExist,
                                                         getAppUserDataDirectory,
+                                                        getDirectoryContents,
                                                         removeFile)
-import           System.FilePath                       ((</>))
-import           System.IO                             (hFlush, hGetEcho,
-                                                        hSetEcho, stdin, stdout)
+import           System.Exit                           (ExitCode (ExitSuccess))
+import           System.FilePath                       (takeExtension, (</>))
+import           System.IO                             (hClose, hFlush,
+                                                        hGetEcho, hSetEcho,
+                                                        stdin, stdout)
+import           System.IO.Temp                        (withSystemTempDirectory)
+import           System.Process                        (StdStream (CreatePipe),
+                                                        createProcess, cwd,
+                                                        proc, std_in,
+                                                        waitForProcess)
 
 -- | Username and password to log into Hackage.
 --
@@ -190,7 +200,7 @@ mkUploader us = do
             , checkStatus = \_ _ _ -> Nothing
             }
     return Uploader
-        { upload_ = \fp -> do
+        { upload_ = \fp0 -> withTarball fp0 $ \fp -> do
             let formData = [partFile "package" fp]
             req2 <- formDataBody formData req1
             let req3 = applyBasicAuth
@@ -222,6 +232,29 @@ mkUploader us = do
                         printBody res
                         error $ "Upload failed on " ++ fp
         }
+
+-- | Given either a file, return it. Given a directory, run @cabal sdist@ and
+-- get the resulting tarball.
+withTarball :: FilePath -> (FilePath -> IO a) -> IO a
+withTarball fp0 inner = do
+    isFile <- doesFileExist fp0
+    if isFile then inner fp0 else withSystemTempDirectory "stackage-upload-tarball" $ \dir -> do
+        isDir <- doesDirectoryExist fp0
+        when (not isDir) $ error $ "Invalid argument: " ++ fp0
+
+        (Just h, Nothing, Nothing, ph) <-
+            createProcess $ (proc "cabal" ["sdist", "--builddir=" ++ dir])
+                { cwd = Just fp0
+                , std_in = CreatePipe
+                }
+        hClose h
+        ec <- waitForProcess ph
+        when (ec /= ExitSuccess) $
+            error $ "Could not create tarball for " ++ fp0
+        contents <- getDirectoryContents dir
+        case filter ((== ".gz") . takeExtension) contents of
+            [x] -> inner (dir </> x)
+            _ -> error $ "Unexpected directory contents after cabal sdist: " ++ show contents
 
 printBody :: Response BodyReader -> IO ()
 printBody res =
