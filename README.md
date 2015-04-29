@@ -1,5 +1,7 @@
 # stackage-upload
 
+[![Build Status](https://travis-ci.org/fpco/stackage-upload.svg?branch=master)](https://travis-ci.org/fpco/stackage-upload)
+
 `stackage-upload` provides a more secure version of the `cabal upload` command
 by using HTTPS. When uploading a package to Hackage, `cabal upload` will
 perform the upload in plain-text via unencrypted HTTP, using [basic
