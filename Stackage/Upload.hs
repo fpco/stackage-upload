@@ -58,7 +58,7 @@ import           System.Directory                      (createDirectoryIfMissing
                                                         doesDirectoryExist,
                                                         doesFileExist,
                                                         getAppUserDataDirectory,
-                                                        getDirectoryContents,
+                                                        getDirectoryContents, removeDirectoryRecursive,
                                                         removeFile)
 import           System.Exit                           (ExitCode (ExitSuccess))
 import           System.FilePath                       (takeExtension, (</>))
@@ -136,7 +136,13 @@ fromPrompt = HackageCredsSource $ do
 
 credsFile :: IO FilePath
 credsFile = do
-    dir <- getAppUserDataDirectory "stackage-upload"
+    olddir <- getAppUserDataDirectory "stackage-upload"
+    exists <- doesDirectoryExist olddir
+    when exists $ do
+        putStrLn $ "Removing old config directory: " ++ olddir
+        removeDirectoryRecursive olddir
+
+    dir <- fmap (</> "upload") $ getAppUserDataDirectory "stackage"
     createDirectoryIfMissing True dir
     return $ dir </> "credentials.json"
 
