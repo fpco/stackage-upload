@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-import Options.Applicative   (argument, empty, metavar, some, str)
+import Options.Applicative   (argument, empty, metavar, many, str)
 import Paths_stackage_upload (version)
 import Stackage.CLI          (simpleOptions, simpleVersion)
 import Stackage.Upload
@@ -13,6 +13,6 @@ main = do
         options
         empty
     uploader <- mkUploader defaultUploadSettings
-    mapM_ (upload uploader) files
+    mapM_ (upload uploader) $ if null files then ["."] else files
   where
-    options = some (argument str (metavar "TARBALLS/DIRECTORIES..."))
+    options = many (argument str (metavar "TARBALLS/DIRECTORIES..."))

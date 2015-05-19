@@ -1,3 +1,7 @@
+## 0.1.0.5
+
+* Running `stackage-upload` by itself is same as `stackage-upload .` [#4](https://github.com/fpco/stackage-upload/issues/4)
+
 ## 0.1.0.4
 
 * Use ~/.stackage/upload
