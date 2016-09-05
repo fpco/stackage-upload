@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -45,8 +46,17 @@ import           Data.Typeable                         (Typeable)
 import           Network.HTTP.Client                   (BodyReader, Manager,
                                                         Response,
                                                         applyBasicAuth, brRead,
-                                                        checkStatus, newManager,
+#if MIN_VERSION_http_client(0,5,0)
+                                                        checkResponse,
+#else
+                                                        checkStatus,
+#endif
+                                                        newManager,
+#if MIN_VERSION_http_client(0,4,30)
+                                                        parseUrlThrow,
+#else
                                                         parseUrl,
+#endif
                                                         requestHeaders,
                                                         responseBody,
                                                         responseStatus,
@@ -200,10 +210,18 @@ mkUploader us = do
     manager <- usGetManager us
     (creds, fromFile) <- loadCreds $ usCredsSource us
     when (not fromFile && usSaveCreds us) $ saveCreds creds
+#if MIN_VERSION_http_client(0,4,30)
+    req0 <- parseUrlThrow $ usUploadUrl us
+#else
     req0 <- parseUrl $ usUploadUrl us
+#endif
     let req1 = req0
             { requestHeaders = [("Accept", "text/plain")]
+#if MIN_VERSION_http_client(0,5,0)
+            , checkResponse = \_ _ -> return ()
+#else
             , checkStatus = \_ _ _ -> Nothing
+#endif
             }
     return Uploader
         { upload_ = \fp0 -> withTarball fp0 $ \fp -> do
